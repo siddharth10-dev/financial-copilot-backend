@@ -6,7 +6,7 @@
 [![Pydantic](https://img.shields.io/badge/Pydantic-v2-red.svg)](https://docs.pydantic.dev/)
 
 > **AI Financial Coach Backend Engine**  
-> A high-performance, deterministic financial decision engine built with Python 3.13, FastAPI, Pydantic v2, and Supabase PostgreSQL. Designed around the core hero metric: **Daily Safe-to-Spend**.
+> A high-performance, deterministic financial decision engine built with Python 3.13, FastAPI, Pydantic v2, and Supabase PostgreSQL. Designed around the core hero metric: **Daily Safe-to-Spend**, with native support for the Indian Account Aggregator (AA) framework.
 
 ---
 
@@ -34,7 +34,7 @@ flowchart TD
     Client["Frontend / Mobile Client"]
     
     subgraph FastAPI ["FastAPI Application Boundary"]
-        Router["API Router (/api/engine)"]
+        Router["API Router (/api/*)"]
         Pydantic["Pydantic v2 Input Validation"]
         Engine["Financial Decision Engine"]
         DI["Dependency Injector (get_db)"]
@@ -43,11 +43,12 @@ flowchart TD
     subgraph Database ["Supabase / PostgreSQL"]
         Accounts[("accounts Table")]
         Goals[("goals Table")]
-        Profiles[("profiles Table")]
+        Budgets[("budgets Table")]
+        Transactions[("transactions Table")]
     end
     
-    subgraph OpenBanking ["Open Banking Layer (v1)"]
-        TrueLayer["TrueLayer API (UK Open Banking)"]
+    subgraph AccountAggregator ["Account Aggregator Layer (AA)"]
+        Setu["Setu / Onemoney AA Framework"]
     end
 
     Client -->|HTTP GET/POST + JSON| Router
@@ -56,7 +57,9 @@ flowchart TD
     DI -->|Inject Client| Engine
     Engine -->|Fetch Balances| Accounts
     Engine -->|Fetch Locked Savings| Goals
-    TrueLayer -.->|Async Webhook Sync| Accounts
+    Engine -->|Fetch Budgets & Limits| Budgets
+    Engine -->|Fetch Categorized Ledger| Transactions
+    Setu -.->|Webhook Ingestion| Router
     Engine -->|HTTP Response| Client
 ```
 
@@ -67,18 +70,9 @@ flowchart TD
 ### MVP v1 Deliverables
 - **Daily Safe-to-Spend**: Real-time calculation across connected user accounts and savings targets (`GET /api/engine/safe-to-spend/{user_id}`).
 - **Single-Purchase Affordability Check**: Evaluate purchase impact against remaining monthly budget and days remaining in the billing period (`POST /api/engine/affordability/{user_id}`).
-- **Strict Boundary Validation**: Type-safe input parsing via Pydantic v2 enforcing UUID structure and positive financial metrics (`cost_pence > 0`).
-- **Dependency Injection**: Isolated Supabase client dependency injection (`get_db`) enabling seamless unit testing and database pooling.
-
-### Deferred for v2
-- Automated 90-day PSD2/FCA Open Banking re-consent workflow.
-- Fixed recurring transaction (bills) deduction from daily allowance.
-- Preset AI guidance actions ("Why am I over budget?", "How do I save £100/mo?").
-
-### Out of Scope (Architectural Constraints)
-- **Unconstrained Freeform Chatbots**: Unrestricted generative models executing financial math introduce unacceptable variance and hallucination.
-- **Arbitrary Health Scores**: Non-actionable composite scoring metrics.
-- **Redundant Dashboard Widgets**: Eliminating UI noise to present a clear, calm financial status.
+- **Bank Sync via Account Aggregator**: Consent generation and automated webhook data ingestion for Indian financial ecosystems (`POST /api/bank_sync/consent/{user_id}` and `POST /api/bank_sync/webhook`).
+- **Goals & Budgets**: Month-independent category limits and target savings tracker (`/api/goals` and `/api/budgets`).
+- **Recent Transactions Ledger**: Account-level transaction fetching with category relational joins (`/api/transactions`).
 
 ---
 
@@ -105,85 +99,25 @@ When evaluating a proposed purchase of `cost_pence`:
 
 ## 5. API Reference
 
-### Health Check
-```http
-GET /health
-```
-**Response (200 OK):**
-```json
-{
-  "status": "healthy",
-  "engine": "running"
-}
-```
+### 5.1 Engine Endpoints (`/api/engine`)
+- `GET /health` — Service health check.
+- `GET /api/engine/safe-to-spend/{user_id}` — Returns calculated safe-to-spend pence balance.
+- `POST /api/engine/affordability/{user_id}` — Evaluates item purchase affordability.
 
----
+### 5.2 Bank Sync Endpoints (`/api/bank_sync`)
+- `POST /api/bank_sync/consent/{user_id}` — Generates AA consent link for user approval.
+- `POST /api/bank_sync/webhook` — Webhook endpoint called by Account Aggregator upon consent activation. Upserts account details and ingests transaction data.
 
-### Fetch Safe-to-Spend Balance
-```http
-GET /api/engine/safe-to-spend/{user_id}
-```
-**Path Parameters:**
-- `user_id` (*string*, required): Valid UUID format (e.g., `41a2d672-42da-4b01-b26c-66c4894a9721`).
+### 5.3 Goals Endpoints (`/api/goals`)
+- `GET /api/goals/{user_id}` — Fetches target goals and current balance.
+- `POST /api/goals/{user_id}` — Creates a new savings goal.
 
-**Response (200 OK):**
-```json
-{
-  "safe_to_spend_pence": 24500,
-  "currency": "GBP"
-}
-```
+### 5.4 Budgets Endpoints (`/api/budgets`)
+- `GET /api/budgets/{user_id}?month_year=YYYY-MM` — Fetches month-independent category budget limits.
+- `POST /api/budgets/{user_id}` — Upserts monthly budget limit for a category.
 
-**Error Response (422 Unprocessable Entity):**
-```json
-{
-  "detail": [
-    {
-      "type": "uuid_parsing",
-      "loc": ["path", "user_id"],
-      "msg": "Input should be a valid UUID"
-    }
-  ]
-}
-```
-
----
-
-### Evaluate Purchase Affordability
-```http
-POST /api/engine/affordability/{user_id}
-Content-Type: application/json
-```
-**Request Body:**
-```json
-{
-  "item_name": "Wireless Headphones",
-  "cost_pence": 4500
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "verdict": "YES",
-  "impact_percentage": 18.4,
-  "safe_to_spend_after_pence": 20000,
-  "reasoning": "Well within your healthy daily spending limits."
-}
-```
-
-**Error Response (422 Unprocessable Entity - Invalid Input):**
-```json
-{
-  "detail": [
-    {
-      "type": "greater_than",
-      "loc": ["body", "cost_pence"],
-      "msg": "Input should be greater than 0"
-    }
-  ]
-}
-```
+### 5.5 Transactions Endpoints (`/api/transactions`)
+- `GET /api/transactions/{user_id}?limit=50` — Retrieves recent transactions joined with category metadata.
 
 ---
 
@@ -193,7 +127,11 @@ Content-Type: application/json
 copilot-backend/
 ├── api/
 │   ├── __init__.py
-│   └── engine.py         # Financial math endpoints & Pydantic models
+│   ├── bank_sync.py      # Indian Account Aggregator consent & webhook engine
+│   ├── budgets.py        # Month-independent budget limits API
+│   ├── engine.py         # Financial math endpoints & Pydantic models
+│   ├── goals.py          # Savings goals CRUD API
+│   └── transactions.py   # Transaction history API
 ├── core/
 │   ├── __init__.py
 │   └── config.py         # Environment configuration settings
@@ -208,60 +146,25 @@ copilot-backend/
 
 ---
 
-## 7. Local Setup and Installation
+## 7. Local Setup and Testing
 
-### Requirements
-- Python 3.13+
-- Supabase PostgreSQL instance
-
-### Environment Setup
+### Setup Environment
 ```bash
 # Clone repository
 git clone https://github.com/siddharth10-dev/financial-copilot-backend.git
 cd financial-copilot-backend
 
-# Initialize virtual environment
+# Virtual environment & dependencies
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install fastapi uvicorn supabase pydantic python-dotenv httpx pytest
-```
 
-### Environment Variables
-Configure `.env` using `.env.example`:
-```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### Running Server
-```bash
+# Start local server
 uvicorn main:app --reload
 ```
-Server runs locally at `http://127.0.0.1:8000`. OpenAPI documentation is accessible at `http://127.0.0.1:8000/docs`.
 
 ---
 
-## 8. Verification and Testing
-
-Integration tests can be run using `pytest` or `TestClient`:
-```bash
-python -c "
-import uuid
-from main import app
-from fastapi.testclient import TestClient
-
-client = TestClient(app)
-test_uuid = str(uuid.uuid4())
-
-print('Health Check:', client.get('/health').status_code)
-print('Safe-to-Spend:', client.get(f'/api/engine/safe-to-spend/{test_uuid}').status_code)
-"
-```
-
----
-
-## 9. License
+## 8. License
 
 Distributed under the MIT License.
