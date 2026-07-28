@@ -1,118 +1,109 @@
-# 🚀 Financial Copilot Engine
+# Financial Copilot Engine
 
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green.svg)](https://supabase.com/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-v2-red.svg)](https://docs.pydantic.dev/)
 
-> **"AI Financial Coach, Not an Expense Tracker"**  
-> A high-performance, deterministic financial decision engine built with FastAPI and Supabase. Designed around a single trustworthy metric: **Daily Safe-to-Spend**.
+> **AI Financial Coach Backend Engine**  
+> A high-performance, deterministic financial decision engine built with Python 3.13, FastAPI, Pydantic v2, and Supabase PostgreSQL. Designed around the core hero metric: **Daily Safe-to-Spend**.
 
 ---
 
-## 💡 Product Thesis & Core Philosophy
+## 1. Product Thesis and Core Philosophy
 
-Most personal finance applications fail because they force users to reconcile spreadsheets, analyze complex pie charts, or decipher arbitrary composite health scores (e.g., *"72/100"*).
+Traditional personal finance applications rely heavily on manual expense tracking, post-hoc budget reconciliation, or arbitrary composite scores (e.g., "72/100") that lack actionable meaning.
 
 ### The Hero Metric: Daily Safe-to-Spend
-Before buying a coffee or a meal, users ask one fundamental question: **"How much can I spend today without messing up my month?"**
+Before making daily discretionary purchases, consumers require a single, trustworthy number: **"How much can I spend today without compromising my monthly savings and fixed obligations?"**
 
-The Financial Copilot backend centers its entire architecture around making **Daily Safe-to-Spend** bulletproof:
+The Financial Copilot backend centers its architecture around calculating a bulletproof **Daily Safe-to-Spend** figure:
+
 $$\text{Safe-to-Spend} = \text{Total Account Balances} - \text{Locked Savings Goals}$$
 
-By combining deterministic arithmetic with time-based monthly burn-rate calculations, the engine provides an instant, high-confidence spending boundary.
-
-```
-+-------------------------------------------------------------------+
-|                     DAILY SAFE-TO-SPEND                           |
-|                            £24.50                                 |
-|               "Well within your daily limit"                      |
-+-------------------------------------------------------------------+
-|  [ Remaining Budget: £420 ]  |  [ Savings Goal Locked: £150 ]     |
-+-------------------------------------------------------------------+
-```
+By coupling deterministic database arithmetic with a time-based monthly burn-rate calculation, the engine provides immediate, high-confidence spending boundaries.
 
 ---
 
-## 🏗️ System Architecture
+## 2. System Architecture
 
-The engine separates **deterministic arithmetic** from **natural-language generation**. Financial math is executed strictly by Python code and database constraints, ensuring zero LLM hallucination risk.
+The service architecture strictly decouples **deterministic financial math** from **natural-language explanation**. All calculations are executed directly in Python and constrained at the database layer, eliminating LLM hallucination risks in core decision paths.
 
 ```mermaid
 flowchart TD
-    Client[📱 Frontend / Mobile App]
+    Client["Frontend / Mobile Client"]
     
-    subgraph FastAPI [FastAPI Application Boundary]
-        Router[🛣️ API Router /api/engine]
-        Pydantic[🛡️ Pydantic V2 Validation]
-        Engine[🧮 Financial Decision Engine]
-        DI[💉 Dependency Injector get_db]
+    subgraph FastAPI ["FastAPI Application Boundary"]
+        Router["API Router (/api/engine)"]
+        Pydantic["Pydantic v2 Input Validation"]
+        Engine["Financial Decision Engine"]
+        DI["Dependency Injector (get_db)"]
     end
     
-    subgraph Database [Supabase / PostgreSQL]
-        Accounts[(💳 accounts)]
-        Goals[(🎯 goals)]
-        Profiles[(👤 profiles)]
+    subgraph Database ["Supabase / PostgreSQL"]
+        Accounts[("accounts Table")]
+        Goals[("goals Table")]
+        Profiles[("profiles Table")]
     end
     
-    subgraph OpenBanking [Open Banking Layer (v1)]
-        TrueLayer[🌐 TrueLayer API UK]
+    subgraph OpenBanking ["Open Banking Layer (v1)"]
+        TrueLayer["TrueLayer API (UK Open Banking)"]
     end
 
     Client -->|HTTP GET/POST + JSON| Router
     Router --> Pydantic
-    Pydantic -->|Validated Models & UUIDs| Engine
+    Pydantic -->|Validated UUIDs & Payloads| Engine
     DI -->|Inject Client| Engine
-    Engine -->|Select Balances| Accounts
-    Engine -->|Select Locked Savings| Goals
+    Engine -->|Fetch Balances| Accounts
+    Engine -->|Fetch Locked Savings| Goals
     TrueLayer -.->|Async Webhook Sync| Accounts
-    Engine -->|JSON Response| Client
+    Engine -->|HTTP Response| Client
 ```
 
 ---
 
-## 🎯 Feature Scope & Principles
+## 3. Core Features and Scope Boundaries
 
-### ✅ Must-Have (MVP v1)
-* **Hero Metric**: Live **Daily Safe-to-Spend** calculation (`GET /api/engine/safe-to-spend/{user_id}`).
-* **Affordability Check**: `"Can I afford this?"` single-purchase evaluation with time-based monthly burn-rate analysis (`POST /api/engine/affordability/{user_id}`).
-* **Strict Type Safety**: UUID validation and positive integer enforcement (`cost_pence > 0`).
-* **Dependency Injection**: Decoupled Supabase client injection for resilience and mock-testing.
-* **Open Banking (TrueLayer UK)**: Single-provider consent-based sync integration pattern.
+### MVP v1 Deliverables
+- **Daily Safe-to-Spend**: Real-time calculation across connected user accounts and savings targets (`GET /api/engine/safe-to-spend/{user_id}`).
+- **Single-Purchase Affordability Check**: Evaluate purchase impact against remaining monthly budget and days remaining in the billing period (`POST /api/engine/affordability/{user_id}`).
+- **Strict Boundary Validation**: Type-safe input parsing via Pydantic v2 enforcing UUID structure and positive financial metrics (`cost_pence > 0`).
+- **Dependency Injection**: Isolated Supabase client dependency injection (`get_db`) enabling seamless unit testing and database pooling.
 
-### ⏳ Wait for v2
-* 90-day PSD2/FCA re-consent automated flow.
-* Fixed recurring bill deduction from daily allowance.
-* Structured AI guidance actions (*"Why am I over budget?", "How do I save £100/mo?"*).
+### Deferred for v2
+- Automated 90-day PSD2/FCA Open Banking re-consent workflow.
+- Fixed recurring transaction (bills) deduction from daily allowance.
+- Preset AI guidance actions ("Why am I over budget?", "How do I save £100/mo?").
 
-### 🚫 Explicit Anti-Goals (What We Cut)
-* ❌ **Freeform Open-Ended Chatbot**: Unconstrained LLMs calculating financial math erosion user trust.
-* ❌ **Arbitrary Health Scores**: Composite scores like *"74/100"* are non-actionable.
-* ❌ **Overwhelming Dashboards**: No 10-tile spreadsheets on the main screen.
+### Out of Scope (Architectural Constraints)
+- **Unconstrained Freeform Chatbots**: Unrestricted generative models executing financial math introduce unacceptable variance and hallucination.
+- **Arbitrary Health Scores**: Non-actionable composite scoring metrics.
+- **Redundant Dashboard Widgets**: Eliminating UI noise to present a clear, calm financial status.
 
 ---
 
-## 📐 Math & Decision Logic
+## 4. Decision Engine Logic and Formulation
 
-### 1. Safe-to-Spend Calculation
+### Safe-to-Spend Calculation
 ```python
-total_balance = sum(account.current_balance_pence)
-locked_savings = sum(goal.current_balance_pence)
+total_balance = sum(account["current_balance_pence"] for account in accounts)
+locked_savings = sum(goal["current_balance_pence"] for goal in goals)
 
 safe_to_spend_pence = total_balance - locked_savings
 ```
 
-### 2. Single-Purchase Affordability Evaluation
-When evaluating a purchase of `cost_pence`:
-1. **Hard Stop (Overdraft Territory)**: If `cost_pence > safe_to_spend_pence` $\rightarrow$ Verdict: **NO**.
-2. **Burn Rate Warning**: 
-   $$\text{Weekly Allowance} = \left( \frac{\text{Current Safe Pence}}{\text{Days Left in Month}} \right) \times 7$$
-   If `cost_pence > weekly_allowance` $\rightarrow$ Verdict: **WARNING** (*"Consumes more than 1 week's remaining budget"*).
-3. **Green Light**: Otherwise $\rightarrow$ Verdict: **YES** (*"Well within healthy spending limits"*).
+### Purchase Affordability Algorithm
+When evaluating a proposed purchase of `cost_pence`:
+
+1. **Deficit Check**: If `cost_pence > safe_to_spend_pence`, return Verdict: `NO`.
+2. **Weekly Allowance Burn Rate**:
+   $$\text{Weekly Allowance} = \left( \frac{\text{Current Safe Pence}}{\text{Days Remaining in Month}} \right) \times 7$$
+   If `cost_pence > weekly_allowance`, return Verdict: `WARNING` (*"Consumes more than one week of remaining budget"*).
+3. **Approval**: Otherwise, return Verdict: `YES` (*"Well within daily spending limits"*).
 
 ---
 
-## 🛠️ API Reference
+## 5. API Reference
 
 ### Health Check
 ```http
@@ -128,12 +119,12 @@ GET /health
 
 ---
 
-### Get Safe-to-Spend
+### Fetch Safe-to-Spend Balance
 ```http
 GET /api/engine/safe-to-spend/{user_id}
 ```
 **Path Parameters:**
-* `user_id` (*UUID, required*): The user's unique identifier.
+- `user_id` (*string*, required): Valid UUID format (e.g., `41a2d672-42da-4b01-b26c-66c4894a9721`).
 
 **Response (200 OK):**
 ```json
@@ -158,7 +149,7 @@ GET /api/engine/safe-to-spend/{user_id}
 
 ---
 
-### Check Purchase Affordability
+### Evaluate Purchase Affordability
 ```http
 POST /api/engine/affordability/{user_id}
 Content-Type: application/json
@@ -166,7 +157,7 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "item_name": "Noise Cancelling Headphones",
+  "item_name": "Wireless Headphones",
   "cost_pence": 4500
 }
 ```
@@ -181,20 +172,55 @@ Content-Type: application/json
 }
 ```
 
+**Error Response (422 Unprocessable Entity - Invalid Input):**
+```json
+{
+  "detail": [
+    {
+      "type": "greater_than",
+      "loc": ["body", "cost_pence"],
+      "msg": "Input should be greater than 0"
+    }
+  ]
+}
+```
+
 ---
 
-## 💻 Local Setup & Development
+## 6. Repository Layout
 
-### 1. Prerequisites
-* **Python 3.13+**
-* **Supabase Project**
+```
+copilot-backend/
+├── api/
+│   ├── __init__.py
+│   └── engine.py         # Financial math endpoints & Pydantic models
+├── core/
+│   ├── __init__.py
+│   └── config.py         # Environment configuration settings
+├── services/
+│   ├── __init__.py
+│   └── supabase_db.py    # Database client & dependency injection
+├── .env.example
+├── .gitignore
+├── main.py               # FastAPI application entry point & router mounting
+└── README.md
+```
 
-### 2. Clone & Setup Environment
+---
+
+## 7. Local Setup and Installation
+
+### Requirements
+- Python 3.13+
+- Supabase PostgreSQL instance
+
+### Environment Setup
 ```bash
+# Clone repository
 git clone https://github.com/siddharth10-dev/financial-copilot-backend.git
 cd financial-copilot-backend
 
-# Create virtual environment
+# Initialize virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
@@ -202,26 +228,24 @@ source venv/bin/activate
 pip install fastapi uvicorn supabase pydantic python-dotenv httpx pytest
 ```
 
-### 3. Environment Configuration
-Create a `.env` file in the project root (refer to `.env.example`):
+### Environment Variables
+Configure `.env` using `.env.example`:
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-### 4. Run Development Server
+### Running Server
 ```bash
 uvicorn main:app --reload
 ```
-The server will start at `http://127.0.0.1:8000`. Access interactive API documentation at:
-- **Swagger UI**: `http://127.0.0.1:8000/docs`
-- **ReDoc**: `http://127.0.0.1:8000/redoc`
+Server runs locally at `http://127.0.0.1:8000`. OpenAPI documentation is accessible at `http://127.0.0.1:8000/docs`.
 
 ---
 
-## 🧪 Testing
+## 8. Verification and Testing
 
-Run the automated integration test suite using `pytest` or `TestClient`:
+Integration tests can be run using `pytest` or `TestClient`:
 ```bash
 python -c "
 import uuid
@@ -231,13 +255,13 @@ from fastapi.testclient import TestClient
 client = TestClient(app)
 test_uuid = str(uuid.uuid4())
 
-print('Health Check:', client.get('/health').json())
-print('Safe-to-Spend:', client.get(f'/api/engine/safe-to-spend/{test_uuid}').json())
+print('Health Check:', client.get('/health').status_code)
+print('Safe-to-Spend:', client.get(f'/api/engine/safe-to-spend/{test_uuid}').status_code)
 "
 ```
 
 ---
 
-## 📜 License
+## 9. License
 
-Distributed under the MIT License. See `LICENSE` for details.
+Distributed under the MIT License.
