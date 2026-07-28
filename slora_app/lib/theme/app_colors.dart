@@ -15,9 +15,9 @@ class AppColors {
   static const Color pinkOrange = Color(0xFFFF7A59);
 
   // Financial Status Colors
-  static const Color successGreen = Color(0xFF22C55E);
-  static const Color warningOrange = Color(0xFFF97316);
-  static const Color errorRed = Color(0xFFEF4444);
+  static const Color successGreen = Color(0xFF4ADE80);
+  static const Color warningOrange = Color(0xFFFB923C);
+  static const Color errorRed = Color(0xFFF87171);
 
   // Text Colors
   static const Color textDark = Color(0xFF1C1F2A);

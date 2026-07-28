@@ -22,6 +22,7 @@ import '../screens/shared/notifications_screen.dart';
 import '../screens/shared/add_goal_screen.dart';
 import '../screens/shared/transaction_details_screen.dart';
 import '../screens/shared/ai_result_screen.dart';
+import '../screens/shared/monthly_plan_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -62,6 +63,7 @@ class AppRouter {
         ),
       ),
       GoRoute(path: '/ai-result', builder: (context, state) => const AiResultScreen()),
+      GoRoute(path: '/monthly-plan', builder: (context, state) => const MonthlyPlanScreen()),
     ],
   );
 }
