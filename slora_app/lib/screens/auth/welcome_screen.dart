@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
-import '../main_shell_screen.dart';
+import '../../widgets/tactile_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -87,7 +88,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Empowering You with Smart Saving Strategies, Budgeting Insights, and Daily Safe-to-Spend Confidence.',
+                          'Spend with confidence. An AI Financial Copilot designed for international students living on a fixed allowance.',
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.5,
@@ -97,35 +98,42 @@ class WelcomeScreen extends StatelessWidget {
                       ],
                     ),
 
-                    // Full-width Vibrant Yellow Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 58,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const MainShellScreen(),
+                    Column(
+                      children: [
+                        TactileButton(
+                          onTap: () => context.push('/signup'),
+                          child: Container(
+                            width: double.infinity,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: AppColors.vibrantYellow,
+                              borderRadius: BorderRadius.circular(28),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.vibrantYellow,
-                          foregroundColor: AppColors.darkSlate,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
+                            child: const Center(
+                              child: Text(
+                                'Get Started',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.darkSlate,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text(
-                          'Get Started',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () => context.push('/login'),
+                          child: Text(
+                            'Already have an account? Log In',
+                            style: TextStyle(
+                              color: AppColors.white.withValues(alpha: 0.8),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

@@ -7,14 +7,16 @@ import 'goals/goals_screen.dart';
 import 'ai/ai_copilot_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
-  const MainShellScreen({super.key});
+  final int initialIndex;
+
+  const MainShellScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
 class _MainShellScreenState extends State<MainShellScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _screens = const [
     HomeDashboardScreen(),
@@ -23,6 +25,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
     GoalsScreen(),
     AiCopilotScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {

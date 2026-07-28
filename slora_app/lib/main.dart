@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'core/app_router.dart';
 import 'theme/app_theme.dart';
-import 'screens/auth/welcome_screen.dart';
 
 void main() {
   runApp(const SloraApp());
@@ -11,11 +11,11 @@ class SloraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Slora AI Financial Copilot',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const WelcomeScreen(),
+      routerConfig: AppRouter.router,
     );
   }
 }
